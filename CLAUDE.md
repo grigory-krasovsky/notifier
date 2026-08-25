@@ -19,8 +19,10 @@ There is **no system `mvn`** — always use the Maven wrapper. The wrapper is `o
 ./mvnw -B -ntp -DskipTests package           # build the boot jar (target/Notifier-0.0.1-SNAPSHOT.jar)
 ./mvnw test                                   # run all tests
 ./mvnw test -Dtest='NotifierApplicationTests#contextLoads'   # run a single test / method
-docker compose up -d --build                 # run everything (app + db) in Docker; app reads .env
+docker compose up -d --build                 # run everything (app + db) in Docker locally; app reads .env
 ```
+
+**Deploy:** push to `master` triggers `.github/workflows/deploy.yml` (test → build image to GHCR → SSH deploy to the VPS). `docker-compose.prod.yml` is the server-side compose (GHCR image, not `build:`). One-time setup and the secrets list live in **`docs/DEPLOY.md`**.
 
 On Windows PowerShell/cmd use `.\mvnw.cmd ...`; the `./mvnw` form above is for the Bash/git-bash shell.
 

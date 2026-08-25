@@ -1,0 +1,35 @@
+services:
+  app:
+    image: ghcr.io/grigory-krasovsky/notifier:latest
+    container_name: notifier-app
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/notifier
+    # Bot uses long polling (outbound only); expose 8080 on localhost for health checks only.
+    ports:
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    container_name: notifier-db
+    environment:
+      POSTGRES_DB: notifier
+      POSTGRES_USER: notifier
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-notifier}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Not published to the host: the DB is only reachable from the app container.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notifier -d notifier"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  pgdata:

@@ -56,3 +56,4 @@ Telegram-бот для напоминаний о событиях. Докуме�
 - Локальная БД: `docker compose up -d` (PostgreSQL 17, порт 5432).
 - Тесты: Testcontainers с реальным PostgreSQL — требуется запущенный Docker Desktop.
 - Приложение контейнеризовано: multi-stage `Dockerfile` + сервис `app` в `docker-compose.yml` (`docker compose up -d --build`); токен подаётся через `env_file: .env`.
+- CI/CD: `.github/workflows/deploy.yml` (push в master → тесты → образ в GHCR → деплой по SSH на VPS через `docker-compose.prod.yml`). Подробности и разовая настройка — `docs/DEPLOY.md`.
