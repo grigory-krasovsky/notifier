@@ -23,7 +23,10 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-notifier}
     volumes:
       - pgdata:/var/lib/postgresql/data
-    # Not published to the host: the DB is only reachable from the app container.
+    # Bound to localhost only: reachable from the app container and via an SSH
+    # tunnel to the host, but NOT from the public internet. Never use 5432:5432 here.
+    ports:
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U notifier -d notifier"]
       interval: 5s
