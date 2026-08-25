@@ -78,7 +78,7 @@ public class EventWizard {
 				draft.setNextFireAt(parsed.get());
 				events.save(draft);
 				setState(user, ChatState.NEW_AWAITING_SCHEDULE);
-				sender.send(chatId, "Как часто срабатывать?", Keyboards.schedulePresets());
+				sender.send(chatId, "Периодичность события?", Keyboards.schedulePresets());
 			}
 			case NEW_AWAITING_INTERVAL_MINUTES, NEW_AWAITING_INTERVAL_HOURS -> {
 				Integer value = parsePositiveInt(text);
