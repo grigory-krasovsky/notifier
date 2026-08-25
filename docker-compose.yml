@@ -1,0 +1,33 @@
+services:
+  app:
+    build: .
+    container_name: notifier-app
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/notifier
+    ports:
+      - "8080:8080"
+
+  db:
+    image: postgres:17-alpine
+    container_name: notifier-db
+    environment:
+      POSTGRES_DB: notifier
+      POSTGRES_USER: notifier
+      POSTGRES_PASSWORD: notifier
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notifier -d notifier"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
