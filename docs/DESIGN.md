@@ -27,7 +27,7 @@ Telegram-бот для напоминаний о событиях. Докуме�
 ## Модель данных (PostgreSQL, Flyway: `src/main/resources/db/migration`)
 
 - `app_user` — telegram_chat_id (uniq), timezone (IANA), work_start/work_end, created_at.
-- `event` — user_id, name, status (ACTIVE/PAUSED/FINISHED), schedule_type (ONCE/EVERY_N_MINUTES/DAILY/WEEKLY) + параметры (interval_minutes, time_of_day, days_of_week), first_fire_at, nag_interval_minutes (null = без напоминаний), **next_fire_at** — предвычисленный момент следующего срабатывания, ключ планировщика.
+- `event` — user_id, name, status (DRAFT/ACTIVE/PAUSED/FINISHED; DRAFT = собирается визардом `/new`, планировщик и `/list` его не видят), schedule_type (ONCE/EVERY_N_MINUTES/DAILY/WEEKLY) + параметры (interval_minutes, time_of_day, days_of_week), first_fire_at, nag_interval_minutes (null = без напоминаний), **next_fire_at** — предвычисленный момент следующего срабатывания, ключ планировщика.
 - `occurrence` — event_id, fired_at, status (OPEN/DONE/SUPERSEDED), **next_reminder_at** (сюда же пишет «Отложить»), done_at, telegram_message_id (для редактирования сообщения по кнопкам).
 
 Схемой владеет Flyway; Hibernate работает в режиме `validate`.
@@ -44,7 +44,7 @@ Telegram-бот для напоминаний о событиях. Докуме�
 ## Команды и UI бота
 
 - `/start` — онбординг: таймзона, рабочие часы (дефолт с кнопкой «изменить»).
-- `/new` — пошаговый визард: название → первое срабатывание → периодичность срабатываний (пресеты) → периодичность напоминаний (пресеты) → подтверждение.
+- `/new` — пошаговый визард: название → первое срабатывание (ЧЧ:ММ или ДД.ММ ЧЧ:ММ) → периодичность срабатываний (пресеты: однократно / ежедневно / каждые N минут / каждые N часов; «еженедельно» — v2) → периодичность напоминаний (пресеты) → итоговое резюме (отдельного шага подтверждения нет).
 - `/list` — активные события с кнопками: ⏸ пауза / ▶ возобновить / 🏁 завершить / 🗑 удалить.
 - `/settings` — таймзона, рабочие часы.
 - Сообщение-уведомление: **✅ Готово** | **⏰ Отложить** (10 мин / 1 час / завтра) | для регулярных — **🏁 Завершить серию**.

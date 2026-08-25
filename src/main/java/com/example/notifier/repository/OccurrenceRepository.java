@@ -14,4 +14,6 @@ public interface OccurrenceRepository extends JpaRepository<Occurrence, Long> {
 	List<Occurrence> findByStatusAndNextReminderAtLessThanEqual(OccurrenceStatus status, Instant moment);
 
 	Optional<Occurrence> findByEventIdAndStatus(Long eventId, OccurrenceStatus status);
+
+	void deleteByEventId(Long eventId);
 }
