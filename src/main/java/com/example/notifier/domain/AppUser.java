@@ -2,6 +2,8 @@ package com.example.notifier.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -37,6 +39,10 @@ public class AppUser {
 
 	@Column(nullable = false)
 	private LocalTime workEnd = LocalTime.of(22, 0);
+
+	/** Current multi-step dialog state; null = no dialog in progress. */
+	@Enumerated(EnumType.STRING)
+	private ChatState chatState;
 
 	@Column(nullable = false, updatable = false)
 	private Instant createdAt = Instant.now();

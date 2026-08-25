@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Greenfield Spring Boot **4.0.6** (Java **17**) application named `Notifier` — a **Telegram notifier bot** backed by PostgreSQL. The persistence layer exists: JPA entities (`domain/`), Spring Data repositories (`repository/`), and a Flyway schema (`src/main/resources/db/migration`). The Telegram bot layer and the scheduler are not written yet. Business rules and the data model are documented in **`docs/DESIGN.md`** — read it before touching domain logic; agreed terminology: *occurrence* (срабатывание) = initial scheduled notification, *reminder* (напоминание) = repeat while an occurrence stays open.
+Greenfield Spring Boot **4.0.6** (Java **17**) application named `Notifier` — a **Telegram notifier bot** backed by PostgreSQL. The persistence layer exists (JPA entities in `domain/`, Spring Data repositories in `repository/`, Flyway schema in `src/main/resources/db/migration`), and the Telegram layer (`telegram/`, library `telegrambots` 9.x, long polling) handles `/start` with timezone onboarding. The scheduler is not written yet. Business rules and the data model are documented in **`docs/DESIGN.md`** — read it before touching domain logic; agreed terminology: *occurrence* (срабатывание) = initial scheduled notification, *reminder* (напоминание) = repeat while an occurrence stays open.
 
 ## Build / run / test
 
@@ -32,6 +32,7 @@ On Windows PowerShell/cmd use `.\mvnw.cmd ...`; the `./mvnw` form above is for t
 - `./mvnw spring-boot:run` expects PostgreSQL on `localhost:5432` — start it with `docker compose up -d`. Datasource defaults in `application.properties` match `docker-compose.yml`; override via `DB_URL`/`DB_USERNAME`/`DB_PASSWORD` env vars.
 - The schema is owned by **Flyway** (`ddl-auto=validate`). Never let Hibernate generate DDL — add a new `V<n>__*.sql` migration under `src/main/resources/db/migration` instead.
 - The bot token comes **only** from the `TELEGRAM_BOT_TOKEN` env var (property `notifier.telegram.bot-token`). Locally it lives in `.env` (git-ignored; template in `.env.example`). Never hardcode or commit it.
+- **`api.telegram.org` is NOT directly reachable from this machine's JVM or Docker containers** (ISP-level block; the host runs AmneziaVPN with split tunneling that covers only some processes — `curl` gets through, Java/.NET/containers do not). General internet egress from Docker works; only Telegram is affected. The bot supports routing its traffic through a proxy via `TELEGRAM_PROXY_HOST`/`TELEGRAM_PROXY_PORT`/`TELEGRAM_PROXY_TYPE` (SOCKS|HTTP; from Docker use `host.docker.internal`). Bot registration failure does not crash the app — it logs an ERROR and keeps running.
 
 ## Things that are non-obvious and must be preserved
 
