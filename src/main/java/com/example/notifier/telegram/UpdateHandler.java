@@ -158,7 +158,7 @@ public class UpdateHandler {
 		}
 		String[] parts = query.getData().split(":");
 		switch (parts[0]) {
-			case "sched", "nag" -> wizard.onCallback(user, query);
+			case "sched", "nag", "cal" -> wizard.onCallback(user, query);
 			case "done" -> onDone(user, Long.parseLong(parts[1]), query, messageId);
 			case "snooze" -> onSnooze(user, Long.parseLong(parts[1]), parts[2], query, messageId);
 			case "finish" -> onFinish(user, Long.parseLong(parts[1]), query, messageId);

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -31,6 +32,26 @@ public class TelegramSender {
 		} catch (TelegramApiException e) {
 			log.error("Failed to send message to chat {}", chatId, e);
 			return null;
+		}
+	}
+
+	/** Replace the inline keyboard of an existing message in place (used for calendar navigation). */
+	public void editKeyboard(long chatId, int messageId, InlineKeyboardMarkup markup) {
+		try {
+			telegramClient.execute(EditMessageReplyMarkup.builder()
+					.chatId(chatId).messageId(messageId).replyMarkup(markup).build());
+		} catch (TelegramApiException e) {
+			log.debug("Cannot edit keyboard of message {} in chat {}", messageId, chatId, e);
+		}
+	}
+
+	/** Replace text and keyboard of an existing message; pass null markup to drop the buttons. */
+	public void editMessage(long chatId, int messageId, String text, InlineKeyboardMarkup markup) {
+		try {
+			telegramClient.execute(EditMessageText.builder()
+					.chatId(chatId).messageId(messageId).text(text).replyMarkup(markup).build());
+		} catch (TelegramApiException e) {
+			log.debug("Cannot edit message {} in chat {}", messageId, chatId, e);
 		}
 	}
 

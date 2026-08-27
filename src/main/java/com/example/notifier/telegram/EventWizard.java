@@ -15,7 +15,11 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.YearMonth;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
@@ -26,6 +30,7 @@ import java.util.Optional;
 public class EventWizard {
 
 	private static final DateTimeFormatter SUMMARY_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+	private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
 	private final AppUserRepository users;
 	private final EventRepository events;
@@ -64,9 +69,7 @@ public class EventWizard {
 				draft.setName(text);
 				events.save(draft);
 				setState(user, ChatState.NEW_AWAITING_FIRST_FIRE);
-				sender.send(chatId, """
-						Когда первое срабатывание?
-						Напиши время ЧЧ:ММ (сегодня; если уже прошло — завтра) или дату и время: ДД.ММ ЧЧ:ММ.""");
+				sendCalendar(user);
 			}
 			case NEW_AWAITING_FIRST_FIRE -> {
 				Optional<Instant> parsed = TimeParsers.parseFirstFire(text, zone(user), Instant.now());
@@ -103,6 +106,10 @@ public class EventWizard {
 			return;
 		}
 		String[] parts = query.getData().split(":");
+		if ("cal".equals(parts[0])) {
+			onCalendar(user, draft, parts, query);
+			return;
+		}
 		if ("sched".equals(parts[0]) && user.getChatState() == ChatState.NEW_AWAITING_SCHEDULE) {
 			sender.answerCallback(query.getId(), null);
 			switch (parts[1]) {
@@ -144,6 +151,59 @@ public class EventWizard {
 			return;
 		}
 		sender.answerCallback(query.getId(), "Эта кнопка уже неактуальна");
+	}
+
+	private void sendCalendar(AppUser user) {
+		LocalDate today = LocalDate.now(zone(user));
+		sender.send(user.getTelegramChatId(),
+				"Когда первое срабатывание? Выбери дату — или напиши вручную: ЧЧ:ММ либо ДД.ММ ЧЧ:ММ.",
+				Keyboards.calendar(YearMonth.from(today), today));
+	}
+
+	private void onCalendar(AppUser user, Event draft, String[] parts, CallbackQuery query) {
+		long chatId = user.getTelegramChatId();
+		int messageId = query.getMessage().getMessageId();
+		if (user.getChatState() != ChatState.NEW_AWAITING_FIRST_FIRE) {
+			sender.answerCallback(query.getId(), "Эта кнопка уже неактуальна");
+			return;
+		}
+		ZoneId zone = zone(user);
+		LocalDate today = LocalDate.now(zone);
+		sender.answerCallback(query.getId(), null);
+		switch (parts[1]) {
+			case "x" -> { /* inert cell */ }
+			case "nav" -> sender.editKeyboard(chatId, messageId, Keyboards.calendar(YearMonth.parse(parts[2]), today));
+			case "day" -> {
+				LocalDate date = LocalDate.parse(parts[2]);
+				sender.editMessage(chatId, messageId,
+						"📅 " + date.format(DATE_FORMAT) + " — выбери час:", Keyboards.hourGrid(date));
+			}
+			case "hour" -> {
+				LocalDate date = LocalDate.parse(parts[2]);
+				int hour = Integer.parseInt(parts[3]);
+				sender.editMessage(chatId, messageId,
+						"📅 " + date.format(DATE_FORMAT) + ", " + parts[3] + " ч — выбери минуты:",
+						Keyboards.minuteGrid(date, hour));
+			}
+			case "min" -> {
+				LocalDate date = LocalDate.parse(parts[2]);
+				Instant chosen = ZonedDateTime.of(date,
+						LocalTime.of(Integer.parseInt(parts[3]), Integer.parseInt(parts[4])), zone).toInstant();
+				if (!chosen.isAfter(Instant.now())) {
+					sender.editMessage(chatId, messageId, "Это время уже прошло — выбери другую дату:",
+							Keyboards.calendar(YearMonth.from(today), today));
+					return;
+				}
+				draft.setFirstFireAt(chosen);
+				draft.setNextFireAt(chosen);
+				events.save(draft);
+				setState(user, ChatState.NEW_AWAITING_SCHEDULE);
+				sender.editMessage(chatId, messageId,
+						"Первое срабатывание: " + chosen.atZone(zone).format(SUMMARY_FORMAT), null);
+				sender.send(chatId, "Периодичность события?", Keyboards.schedulePresets());
+			}
+			default -> log.warn("Unknown calendar callback: {}", query.getData());
+		}
 	}
 
 	private void askNag(AppUser user) {
