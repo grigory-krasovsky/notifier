@@ -176,15 +176,17 @@ public class UpdateHandler {
 			sender.answerCallback(query.getId(), "Уже неактуально");
 			return;
 		}
+		Instant now = Instant.now();
 		occurrence.setStatus(OccurrenceStatus.DONE);
-		occurrence.setDoneAt(Instant.now());
+		occurrence.setDoneAt(now);
 		occurrence.setNextReminderAt(null);
 		Event event = occurrence.getEvent();
 		if (event.getScheduleType() == ScheduleType.ONCE) {
 			event.setStatus(EventStatus.FINISHED);
 			event.setNextFireAt(null);
 		}
-		sender.removeButtons(user.getTelegramChatId(), messageId);
+		String time = now.atZone(ZoneId.of(user.getTimezone())).format(TIME_FORMAT);
+		sender.editMessage(user.getTelegramChatId(), messageId, "✅ " + event.getName() + " — " + time, null);
 		sender.answerCallback(query.getId(), "✅ Готово");
 	}
 
@@ -213,8 +215,9 @@ public class UpdateHandler {
 		}
 		event.setStatus(EventStatus.FINISHED);
 		event.setNextFireAt(null);
-		closeOpenOccurrence(user, event);
-		sender.removeButtons(user.getTelegramChatId(), messageId);
+		// The finish button sits on the open occurrence's own message, which closeOpenOccurrence turns
+		// into a trace — so no separate removeButtons(messageId) is needed here.
+		closeOpenOccurrence(user, event, "🏁 " + event.getName() + " — серия завершена");
 		sender.answerCallback(query.getId(), "🏁 Серия завершена");
 	}
 
@@ -225,8 +228,8 @@ public class UpdateHandler {
 			return;
 		}
 		event.setStatus(EventStatus.PAUSED);
-		closeOpenOccurrence(user, event);
-		sender.removeButtons(user.getTelegramChatId(), messageId);
+		closeOpenOccurrence(user, event, "⏸ " + event.getName() + " — на паузе");
+		sender.removeButtons(user.getTelegramChatId(), messageId); // the /list item that carried the pause button
 		sender.answerCallback(query.getId(), "⏸ На паузе. Возобновить: /list");
 	}
 
@@ -254,12 +257,13 @@ public class UpdateHandler {
 		sender.answerCallback(query.getId(), "🗑 Удалено");
 	}
 
-	private void closeOpenOccurrence(AppUser user, Event event) {
+	/** Close the event's open occurrence and turn its notification message into a compact trace. */
+	private void closeOpenOccurrence(AppUser user, Event event, String trace) {
 		occurrences.findByEventIdAndStatus(event.getId(), OccurrenceStatus.OPEN).ifPresent(open -> {
 			open.setStatus(OccurrenceStatus.SUPERSEDED);
 			open.setNextReminderAt(null);
 			if (open.getTelegramMessageId() != null) {
-				sender.removeButtons(user.getTelegramChatId(), open.getTelegramMessageId().intValue());
+				sender.editMessage(user.getTelegramChatId(), open.getTelegramMessageId().intValue(), trace, null);
 			}
 		});
 	}

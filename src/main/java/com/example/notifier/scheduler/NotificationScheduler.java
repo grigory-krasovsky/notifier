@@ -49,7 +49,10 @@ public class NotificationScheduler {
 				// Otherwise Hibernate orders the INSERT ahead of the UPDATE, two OPEN
 				// occurrences briefly coexist, and uq_occurrence_open_per_event fails.
 				occurrences.saveAndFlush(open);
-				sender.removeButtons(chatId, toMessageId(open.getTelegramMessageId()));
+				Integer openMsg = toMessageId(open.getTelegramMessageId());
+				if (openMsg != null) {
+					sender.editMessage(chatId, openMsg, "⏭ " + event.getName() + " — заменено новым", null);
+				}
 			});
 
 			Occurrence occurrence = new Occurrence();
@@ -74,11 +77,16 @@ public class NotificationScheduler {
 		for (Occurrence occurrence : occurrences.findByStatusAndNextReminderAtLessThanEqual(OccurrenceStatus.OPEN, now)) {
 			Event event = occurrence.getEvent();
 			AppUser user = event.getUser();
-			Integer messageId = sender.send(user.getTelegramChatId(), "🔁 Напоминание: " + event.getName(),
-					Keyboards.notification(occurrence.getId(), finishableEventId(event)));
-			if (messageId != null) {
-				occurrence.setTelegramMessageId(messageId.longValue());
+			long chatId = user.getTelegramChatId();
+			// Keep one live message per occurrence: drop the previous ping before sending a fresh one.
+			// A fresh message (not an edit) is deliberate — editing in place would not re-notify.
+			Integer previous = toMessageId(occurrence.getTelegramMessageId());
+			if (previous != null && !sender.deleteMessage(chatId, previous)) {
+				sender.removeButtons(chatId, previous); // older than 48h: undeletable, at least strip stale buttons
 			}
+			Integer messageId = sender.send(chatId, "🔁 Напоминание: " + event.getName(),
+					Keyboards.notification(occurrence.getId(), finishableEventId(event)));
+			occurrence.setTelegramMessageId(messageId == null ? null : messageId.longValue());
 			Integer nag = event.getNagIntervalMinutes();
 			occurrence.setNextReminderAt(nag == null ? null
 					: ScheduleMath.deferIntoWorkingHours(now.plus(nag, ChronoUnit.MINUTES), user));

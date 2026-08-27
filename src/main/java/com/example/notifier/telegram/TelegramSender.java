@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
@@ -68,6 +69,23 @@ public class TelegramSender {
 					.chatId(chatId).messageId(messageId).replyMarkup(null).build());
 		} catch (TelegramApiException e) {
 			log.debug("Cannot remove buttons from message {} in chat {}", messageId, chatId, e);
+		}
+	}
+
+	/**
+	 * Delete a message; best-effort. Returns false when nothing was deleted — notably Telegram
+	 * forbids bots from deleting their own messages older than 48h, so callers must have a fallback.
+	 */
+	public boolean deleteMessage(long chatId, Integer messageId) {
+		if (messageId == null) {
+			return false;
+		}
+		try {
+			telegramClient.execute(DeleteMessage.builder().chatId(chatId).messageId(messageId).build());
+			return true;
+		} catch (TelegramApiException e) {
+			log.debug("Cannot delete message {} in chat {}", messageId, chatId, e);
+			return false;
 		}
 	}
 
