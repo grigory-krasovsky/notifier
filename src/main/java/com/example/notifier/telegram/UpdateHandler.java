@@ -54,7 +54,13 @@ public class UpdateHandler {
 		if (update.hasCallbackQuery()) {
 			handleCallback(update.getCallbackQuery());
 		} else if (update.hasMessage() && update.getMessage().hasText()) {
-			handleText(update.getMessage().getChatId(), update.getMessage().getText().trim());
+			long chatId = update.getMessage().getChatId();
+			String text = update.getMessage().getText().trim();
+			handleText(chatId, text);
+			// Keep the chat tidy: once we've responded, the user's command message is just noise.
+			if (text.startsWith("/")) {
+				sender.deleteMessage(chatId, update.getMessage().getMessageId());
+			}
 		}
 	}
 
