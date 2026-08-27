@@ -93,7 +93,12 @@ public final class Keyboards {
 		}
 		for (int day = 1; day <= month.lengthOfMonth(); day++) {
 			LocalDate date = month.atDay(day);
-			row.add(date.isBefore(today) ? btn("·", NOOP) : btn(String.valueOf(day), "cal:day:" + date));
+			if (date.isBefore(today)) {
+				row.add(btn("·", NOOP)); // past: inert
+			} else {
+				String label = date.equals(today) ? "[" + day + "]" : String.valueOf(day); // mark today
+				row.add(btn(label, "cal:day:" + date));
+			}
 			if (row.size() == 7) {
 				rows.add(row);
 				row = new InlineKeyboardRow();

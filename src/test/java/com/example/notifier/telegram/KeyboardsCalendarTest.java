@@ -45,6 +45,16 @@ class KeyboardsCalendarTest {
 	}
 
 	@Test
+	void todayIsMarkedButStillSelectable() {
+		LocalDate today = LocalDate.of(2026, 8, 10);
+		InlineKeyboardMarkup cal = Keyboards.calendar(YearMonth.of(2026, 8), today);
+		InlineKeyboardButton todayBtn = cal.getKeyboard().stream().flatMap(List::stream)
+				.filter(b -> "cal:day:2026-08-10".equals(b.getCallbackData()))
+				.findFirst().orElseThrow();
+		assertThat(todayBtn.getText()).isEqualTo("[10]");
+	}
+
+	@Test
 	void futureMonthOffersBackNavigation() {
 		LocalDate today = LocalDate.of(2026, 8, 10);
 		assertThat(callbackData(Keyboards.calendar(YearMonth.of(2026, 9), today)))
