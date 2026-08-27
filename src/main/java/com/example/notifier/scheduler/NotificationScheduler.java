@@ -45,6 +45,10 @@ public class NotificationScheduler {
 			occurrences.findByEventIdAndStatus(event.getId(), OccurrenceStatus.OPEN).ifPresent(open -> {
 				open.setStatus(OccurrenceStatus.SUPERSEDED);
 				open.setNextReminderAt(null);
+				// Flush the supersede UPDATE before the new OPEN row is inserted below.
+				// Otherwise Hibernate orders the INSERT ahead of the UPDATE, two OPEN
+				// occurrences briefly coexist, and uq_occurrence_open_per_event fails.
+				occurrences.saveAndFlush(open);
 				sender.removeButtons(chatId, toMessageId(open.getTelegramMessageId()));
 			});
 
