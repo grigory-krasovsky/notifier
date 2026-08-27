@@ -55,6 +55,14 @@ public final class Keyboards {
 		return builder.build();
 	}
 
+	/** Yes/No confirmation for the destructive /clear command. */
+	public static InlineKeyboardMarkup confirmClear() {
+		return InlineKeyboardMarkup.builder()
+				.keyboardRow(new InlineKeyboardRow(
+						btn("🧹 Да, очистить", "clear:yes"), btn("Отмена", "clear:no")))
+				.build();
+	}
+
 	public static InlineKeyboardMarkup listItem(Event event) {
 		InlineKeyboardButton toggle = event.getStatus() == EventStatus.PAUSED
 				? btn("▶ Возобновить", "resume:" + event.getId())

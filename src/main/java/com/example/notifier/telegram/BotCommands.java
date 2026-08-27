@@ -14,6 +14,7 @@ public final class BotCommands {
 		return List.of(
 				cmd("new", "Создать событие"),
 				cmd("list", "Мои события — пауза, завершение, удаление"),
+				cmd("clear", "Очистить переписку со мной"),
 				cmd("help", "Что я умею"),
 				cmd("start", "Перенастроить часовой пояс"));
 	}

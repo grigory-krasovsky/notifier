@@ -36,6 +36,13 @@ public class UpdateHandler {
 	private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("H:mm");
 	private static final DateTimeFormatter SHORT_FORMAT = DateTimeFormatter.ofPattern("dd.MM HH:mm");
 
+	/**
+	 * How many message ids /clear scans downward from the command. Telegram won't delete messages
+	 * older than 48h anyway, so this only needs to cover a couple of days of chatter; it also bounds
+	 * how long the (blocking, single-threaded) delete loop runs. Tunable.
+	 */
+	private static final int CLEAR_SCAN_LIMIT = 100;
+
 	private final AppUserRepository users;
 	private final EventRepository events;
 	private final OccurrenceRepository occurrences;
@@ -69,6 +76,10 @@ public class UpdateHandler {
 			}
 			case "/list" -> {
 				sendList(user);
+				return;
+			}
+			case "/clear" -> {
+				onClearRequest(chatId);
 				return;
 			}
 			case "/help" -> {
@@ -143,6 +154,7 @@ public class UpdateHandler {
 		sender.send(chatId, """
 				/new — создать событие
 				/list — список событий (пауза, завершение, удаление)
+				/clear — очистить переписку со мной
 				/start — перенастроить часовой пояс
 				На уведомлениях есть кнопки: ✅ Готово, ⏰ отложить, 🏁 завершить серию.""");
 	}
@@ -165,6 +177,7 @@ public class UpdateHandler {
 			case "pause" -> onPause(user, Long.parseLong(parts[1]), query, messageId);
 			case "resume" -> onResume(user, Long.parseLong(parts[1]), query, messageId);
 			case "delete" -> onDelete(user, Long.parseLong(parts[1]), query, messageId);
+			case "clear" -> onClear(user, parts[1], query, messageId);
 			default -> sender.answerCallback(query.getId(), "Неизвестная кнопка");
 		}
 	}
@@ -255,6 +268,40 @@ public class UpdateHandler {
 		events.delete(event);
 		sender.removeButtons(user.getTelegramChatId(), messageId);
 		sender.answerCallback(query.getId(), "🗑 Удалено");
+	}
+
+	private void onClearRequest(long chatId) {
+		sender.send(chatId, """
+				Очистить переписку со мной? Удалю сообщения в этом чате за последние ~48 часов — \
+				то, что старше, Telegram боту стирать не даёт.
+				События и напоминания не трогаю, только сообщения.""", Keyboards.confirmClear());
+	}
+
+	/**
+	 * Best-effort chat wipe: Telegram gives bots no "clear history" call, so we walk message ids
+	 * downward from the confirmation message and delete each one. Ids are per-chat sequential, so we
+	 * never touch other chats; anything older than 48h simply fails and is counted as skipped.
+	 */
+	private void onClear(AppUser user, String decision, CallbackQuery query, Integer messageId) {
+		long chatId = user.getTelegramChatId();
+		if (!"yes".equals(decision)) {
+			sender.deleteMessage(chatId, messageId); // drop the confirmation prompt itself
+			sender.answerCallback(query.getId(), "Отменено");
+			return;
+		}
+		int deleted = 0;
+		int floor = Math.max(1, messageId - CLEAR_SCAN_LIMIT);
+		for (int id = messageId - 1; id >= floor; id--) {
+			if (sender.deleteMessage(chatId, id)) {
+				deleted++;
+			}
+		}
+		// Keep the confirmation message as the single survivor and turn it into the summary.
+		sender.editMessage(chatId, messageId, ("""
+				🧹 Готово: удалил сообщений — %d.
+				Что старше 48 часов, Telegram боту стирать не разрешает. Полностью очистить историю \
+				можно самому: меню чата → «Очистить историю».""").formatted(deleted), null);
+		sender.answerCallback(query.getId(), "Готово");
 	}
 
 	/** Close the event's open occurrence and turn its notification message into a compact trace. */
