@@ -4,13 +4,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
+import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
+import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
+
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -64,6 +68,16 @@ public class TelegramSender {
 					.chatId(chatId).messageId(messageId).replyMarkup(null).build());
 		} catch (TelegramApiException e) {
 			log.debug("Cannot remove buttons from message {} in chat {}", messageId, chatId, e);
+		}
+	}
+
+	/** Publish the "/" command menu; best-effort, never fails startup. */
+	public void setCommands(List<BotCommand> commands) {
+		try {
+			telegramClient.execute(SetMyCommands.builder().commands(commands).build());
+			log.info("Registered {} bot commands", commands.size());
+		} catch (TelegramApiException e) {
+			log.warn("Failed to register bot commands", e);
 		}
 	}
 

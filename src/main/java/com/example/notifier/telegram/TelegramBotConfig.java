@@ -32,7 +32,7 @@ public class TelegramBotConfig {
 
 	@Bean
 	public ApplicationRunner telegramBotRegistrar(TelegramBotsLongPollingApplication botsApplication,
-			TelegramProperties properties, NotifierBot bot) {
+			TelegramProperties properties, NotifierBot bot, TelegramSender sender) {
 		return args -> {
 			if (properties.botToken() == null || properties.botToken().isBlank()) {
 				log.warn("TELEGRAM_BOT_TOKEN is not set - Telegram bot is disabled");
@@ -40,6 +40,7 @@ public class TelegramBotConfig {
 			}
 			try {
 				botsApplication.registerBot(properties.botToken(), bot);
+				sender.setCommands(BotCommands.all());
 				log.info("Telegram bot registered, long polling started");
 			} catch (Exception e) {
 				log.error("Telegram bot registration failed - the app keeps running, but the bot is DOWN. "
