@@ -64,7 +64,22 @@ class KeyboardsCalendarTest {
 	@Test
 	void hourAndMinuteGridsEncodeTheSelection() {
 		LocalDate date = LocalDate.of(2026, 8, 20);
-		assertThat(callbackData(Keyboards.hourGrid(date))).hasSize(24).contains("cal:hour:2026-08-20:09");
-		assertThat(callbackData(Keyboards.minuteGrid(date, 9))).hasSize(12).contains("cal:min:2026-08-20:09:30");
+		List<String> hours = callbackData(Keyboards.hourGrid(date));
+		assertThat(hours).filteredOn(d -> d.startsWith("cal:hour:")).hasSize(24);
+		assertThat(hours).contains("cal:hour:2026-08-20:09");
+
+		List<String> minutes = callbackData(Keyboards.minuteGrid(date, 9));
+		assertThat(minutes).filteredOn(d -> d.startsWith("cal:min:")).hasSize(12);
+		assertThat(minutes).contains("cal:min:2026-08-20:09:30");
+	}
+
+	@Test
+	void everyWizardKeyboardOffersCancel() {
+		LocalDate today = LocalDate.of(2026, 8, 10);
+		assertThat(callbackData(Keyboards.calendar(YearMonth.of(2026, 8), today))).contains("new:cancel");
+		assertThat(callbackData(Keyboards.hourGrid(today))).contains("new:cancel");
+		assertThat(callbackData(Keyboards.minuteGrid(today, 9))).contains("new:cancel");
+		assertThat(callbackData(Keyboards.schedulePresets())).contains("new:cancel");
+		assertThat(callbackData(Keyboards.nagPresets())).contains("new:cancel");
 	}
 }

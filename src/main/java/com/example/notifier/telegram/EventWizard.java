@@ -49,7 +49,7 @@ public class EventWizard {
 		draft.setScheduleType(ScheduleType.ONCE);
 		events.save(draft);
 		setState(user, ChatState.NEW_AWAITING_NAME);
-		sender.send(user.getTelegramChatId(), "Как назовём событие?");
+		sender.send(user.getTelegramChatId(), "Как назовём событие? (/cancel — отмена)");
 	}
 
 	public void onText(AppUser user, String text) {
@@ -100,12 +100,22 @@ public class EventWizard {
 
 	public void onCallback(AppUser user, CallbackQuery query) {
 		long chatId = user.getTelegramChatId();
+		String[] parts = query.getData().split(":");
+		if ("new".equals(parts[0]) && "cancel".equals(parts[1])) {
+			if (!isWizardState(user.getChatState())) {
+				sender.answerCallback(query.getId(), "Уже неактуально");
+				return;
+			}
+			cancel(user);
+			sender.answerCallback(query.getId(), "Отменено");
+			sender.editMessage(chatId, query.getMessage().getMessageId(), "✖ Создание события отменено", null);
+			return;
+		}
 		Event draft = draft(user);
 		if (draft == null) {
 			sender.answerCallback(query.getId(), "Черновика нет — начни с /new");
 			return;
 		}
-		String[] parts = query.getData().split(":");
 		if ("cal".equals(parts[0])) {
 			onCalendar(user, draft, parts, query);
 			return;
@@ -128,13 +138,13 @@ public class EventWizard {
 					draft.setScheduleType(ScheduleType.EVERY_N_MINUTES);
 					events.save(draft);
 					setState(user, ChatState.NEW_AWAITING_INTERVAL_MINUTES);
-					sender.send(chatId, "Каждые сколько минут? Напиши число.");
+					sender.send(chatId, "Каждые сколько минут? Напиши число. (/cancel — отмена)");
 				}
 				case "EVERY_HOUR" -> {
 					draft.setScheduleType(ScheduleType.EVERY_N_MINUTES);
 					events.save(draft);
 					setState(user, ChatState.NEW_AWAITING_INTERVAL_HOURS);
-					sender.send(chatId, "Каждые сколько часов? Напиши число.");
+					sender.send(chatId, "Каждые сколько часов? Напиши число. (/cancel — отмена)");
 				}
 				default -> log.warn("Unknown schedule preset: {}", query.getData());
 			}
@@ -221,6 +231,24 @@ public class EventWizard {
 				Расписание: %s
 				Первое срабатывание: %s
 				Напоминания: %s""".formatted(event.getName(), ScheduleMath.describe(event), first, nag);
+	}
+
+	/** Abort an in-progress /new: drop the draft and clear the dialog state. */
+	public void cancel(AppUser user) {
+		events.findFirstByUserIdAndStatus(user.getId(), EventStatus.DRAFT).ifPresent(draft -> {
+			occurrences.deleteByEventId(draft.getId());
+			events.delete(draft);
+		});
+		setState(user, null);
+	}
+
+	/** True while the user is inside the /new wizard (any step), so /cancel is meaningful. */
+	public static boolean isWizardState(ChatState state) {
+		return state != null && switch (state) {
+			case NEW_AWAITING_NAME, NEW_AWAITING_FIRST_FIRE, NEW_AWAITING_SCHEDULE,
+					NEW_AWAITING_INTERVAL_MINUTES, NEW_AWAITING_INTERVAL_HOURS, NEW_AWAITING_NAG -> true;
+			default -> false;
+		};
 	}
 
 	private Event draft(AppUser user) {

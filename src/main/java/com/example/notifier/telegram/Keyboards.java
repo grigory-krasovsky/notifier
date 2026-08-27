@@ -29,6 +29,7 @@ public final class Keyboards {
 						btn("Однократно", "sched:ONCE"), btn("Каждый день", "sched:DAILY")))
 				.keyboardRow(new InlineKeyboardRow(
 						btn("Каждые N минут", "sched:EVERY_MIN"), btn("Каждые N часов", "sched:EVERY_HOUR")))
+				.keyboardRow(cancelRow())
 				.build();
 	}
 
@@ -38,6 +39,7 @@ public final class Keyboards {
 				.keyboardRow(new InlineKeyboardRow(
 						btn("10 мин", "nag:10"), btn("30 мин", "nag:30"),
 						btn("1 час", "nag:60"), btn("3 часа", "nag:180")))
+				.keyboardRow(cancelRow())
 				.build();
 	}
 
@@ -118,6 +120,7 @@ public final class Keyboards {
 			}
 			rows.add(row);
 		}
+		rows.add(cancelRow());
 
 		InlineKeyboardMarkup.InlineKeyboardMarkupBuilder builder = InlineKeyboardMarkup.builder();
 		rows.forEach(builder::keyboardRow);
@@ -136,6 +139,7 @@ public final class Keyboards {
 				row = new InlineKeyboardRow();
 			}
 		}
+		builder.keyboardRow(cancelRow());
 		return builder.build();
 	}
 
@@ -155,7 +159,13 @@ public final class Keyboards {
 		if (!row.isEmpty()) {
 			builder.keyboardRow(row);
 		}
+		builder.keyboardRow(cancelRow());
 		return builder.build();
+	}
+
+	/** Cancel row shared by every /new wizard keyboard; aborts the draft. */
+	private static InlineKeyboardRow cancelRow() {
+		return new InlineKeyboardRow(btn("✖ Отмена", "new:cancel"));
 	}
 
 	private static InlineKeyboardButton btn(String text, String callbackData) {

@@ -88,6 +88,15 @@ public class UpdateHandler {
 				onClearRequest(chatId);
 				return;
 			}
+			case "/cancel" -> {
+				if (EventWizard.isWizardState(user.getChatState())) {
+					wizard.cancel(user);
+					sender.send(chatId, "✖ Создание события отменено.");
+				} else {
+					sender.send(chatId, "Сейчас нечего отменять.");
+				}
+				return;
+			}
 			case "/help" -> {
 				sendHelp(chatId);
 				return;
@@ -176,7 +185,7 @@ public class UpdateHandler {
 		}
 		String[] parts = query.getData().split(":");
 		switch (parts[0]) {
-			case "sched", "nag", "cal" -> wizard.onCallback(user, query);
+			case "sched", "nag", "cal", "new" -> wizard.onCallback(user, query);
 			case "done" -> onDone(user, Long.parseLong(parts[1]), query, messageId);
 			case "snooze" -> onSnooze(user, Long.parseLong(parts[1]), parts[2], query, messageId);
 			case "finish" -> onFinish(user, Long.parseLong(parts[1]), query, messageId);
