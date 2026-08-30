@@ -40,6 +40,15 @@ public class TelegramSender {
 		}
 	}
 
+	/** Send with HTML parse mode; used for the monospace &lt;pre&gt; /schedule table. */
+	public void sendHtml(long chatId, String html) {
+		try {
+			telegramClient.execute(SendMessage.builder().chatId(chatId).text(html).parseMode("HTML").build());
+		} catch (TelegramApiException e) {
+			log.error("Failed to send HTML message to chat {}", chatId, e);
+		}
+	}
+
 	/** Replace the inline keyboard of an existing message in place (used for calendar navigation). */
 	public void editKeyboard(long chatId, int messageId, InlineKeyboardMarkup markup) {
 		try {

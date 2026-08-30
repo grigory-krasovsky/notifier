@@ -13,7 +13,8 @@ public final class BotCommands {
 	public static List<BotCommand> all() {
 		return List.of(
 				cmd("new", "Создать событие"),
-				cmd("list", "Мои события — пауза, завершение, удаление"),
+				cmd("schedule", "Расписание событий таблицей"),
+				cmd("manage", "Управление: пауза, завершение, удаление"),
 				cmd("clear", "Очистить переписку со мной"),
 				cmd("help", "Что я умею"),
 				cmd("start", "Перенастроить часовой пояс"));

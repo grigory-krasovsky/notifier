@@ -80,8 +80,12 @@ public class UpdateHandler {
 				wizard.start(user);
 				return;
 			}
-			case "/list" -> {
-				sendList(user);
+			case "/manage", "/list" -> {
+				sendManage(user);
+				return;
+			}
+			case "/schedule" -> {
+				sendSchedule(user);
 				return;
 			}
 			case "/clear" -> {
@@ -146,9 +150,9 @@ public class UpdateHandler {
 				offsetLabel(offset), user.getWorkStart(), user.getWorkEnd()));
 	}
 
-	private void sendList(AppUser user) {
-		List<Event> list = events.findByUserIdAndStatusInOrderByCreatedAt(user.getId(),
-				List.of(EventStatus.ACTIVE, EventStatus.PAUSED));
+	/** /manage: one message per event, each with pause/finish/delete buttons. */
+	private void sendManage(AppUser user) {
+		List<Event> list = activeEvents(user);
 		if (list.isEmpty()) {
 			sender.send(user.getTelegramChatId(), "Активных событий нет. Создать: /new");
 			return;
@@ -165,10 +169,29 @@ public class UpdateHandler {
 		}
 	}
 
+	/** /schedule: a single monospace table of every event, no buttons — just an overview. */
+	private void sendSchedule(AppUser user) {
+		List<Event> list = activeEvents(user);
+		if (list.isEmpty()) {
+			sender.send(user.getTelegramChatId(), "Активных событий нет. Создать: /new");
+			return;
+		}
+		ZoneId zone = ZoneId.of(user.getTimezone());
+		for (String message : ScheduleTable.render(list, zone)) {
+			sender.sendHtml(user.getTelegramChatId(), message);
+		}
+	}
+
+	private List<Event> activeEvents(AppUser user) {
+		return events.findByUserIdAndStatusInOrderByCreatedAt(user.getId(),
+				List.of(EventStatus.ACTIVE, EventStatus.PAUSED));
+	}
+
 	private void sendHelp(long chatId) {
 		sender.send(chatId, """
 				/new — создать событие
-				/list — список событий (пауза, завершение, удаление)
+				/schedule — расписание всех событий таблицей
+				/manage — управление событиями (пауза, завершение, удаление)
 				/clear — очистить переписку со мной
 				/start — перенастроить часовой пояс
 				На уведомлениях есть кнопки: ✅ Готово, ⏰ отложить, 🏁 завершить серию.""");
