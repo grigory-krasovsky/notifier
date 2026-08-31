@@ -2,7 +2,6 @@ package com.example.notifier.telegram;
 
 import com.example.notifier.domain.Event;
 import com.example.notifier.domain.EventStatus;
-import com.example.notifier.scheduler.ScheduleMath;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -18,9 +17,7 @@ public final class ScheduleTable {
 
 	private static final DateTimeFormatter NEXT = DateTimeFormatter.ofPattern("dd.MM HH:mm");
 	private static final int NAME_W = 16;
-	private static final int NEXT_W = 13;
-	private static final int SCHED_W = 20;
-	private static final int MAX_ROWS = 40; // ~50 chars/row keeps each message well under 4096
+	private static final int MAX_ROWS = 40; // keeps each message well under Telegram's 4096-char limit
 
 	private ScheduleTable() {
 	}
@@ -37,17 +34,17 @@ public final class ScheduleTable {
 
 	private static String renderPage(List<Event> events, ZoneId zone) {
 		StringBuilder sb = new StringBuilder("<pre>");
-		sb.append(row("Событие", "Следующее", "Расписание"));
+		sb.append(row("Событие", "Следующее"));
 		for (Event event : events) {
 			String next = event.getStatus() == EventStatus.PAUSED ? "пауза"
 					: event.getNextFireAt() == null ? "—" : event.getNextFireAt().atZone(zone).format(NEXT);
-			sb.append(row(event.getName(), next, ScheduleMath.describe(event)));
+			sb.append(row(event.getName(), next));
 		}
 		return sb.append("</pre>").toString();
 	}
 
-	private static String row(String name, String next, String schedule) {
-		return pad(name, NAME_W) + "  " + pad(next, NEXT_W) + "  " + esc(trunc(schedule, SCHED_W)) + "\n";
+	private static String row(String name, String next) {
+		return pad(name, NAME_W) + "  " + esc(next) + "\n";
 	}
 
 	/** Truncate to the visible width, then escape — padding stays correct because entities render as one char. */

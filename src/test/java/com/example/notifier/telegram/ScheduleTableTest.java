@@ -34,10 +34,10 @@ class ScheduleTableTest {
 		assertThat(messages).hasSize(1);
 		String msg = messages.get(0);
 		assertThat(msg).startsWith("<pre>").endsWith("</pre>");
-		assertThat(msg).contains("Следующее").contains("Расписание");
-		assertThat(msg).contains("Позвонить" + " ".repeat(9)); // name padded to its column
-		assertThat(msg).contains("31.08 14:00");               // next firing in the user's zone
-		assertThat(msg).contains("пауза");                     // paused shown instead of a date
+		assertThat(msg).contains("Событие").contains("Следующее");
+		assertThat(msg).doesNotContain("Расписание");                        // schedule column removed
+		assertThat(msg).contains("Позвонить" + " ".repeat(9) + "31.08 14:00"); // name padded, next aligned
+		assertThat(msg).contains("пауза");                                   // paused shown instead of a date
 	}
 
 	@Test
