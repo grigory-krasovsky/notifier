@@ -16,7 +16,7 @@ import java.util.List;
 public final class ScheduleTable {
 
 	private static final DateTimeFormatter NEXT = DateTimeFormatter.ofPattern("dd.MM HH:mm");
-	private static final int NAME_W = 16;
+	private static final int NAME_W = 24;
 	private static final int MAX_ROWS = 40; // keeps each message well under Telegram's 4096-char limit
 
 	private ScheduleTable() {

@@ -36,7 +36,7 @@ class ScheduleTableTest {
 		assertThat(msg).startsWith("<pre>").endsWith("</pre>");
 		assertThat(msg).contains("Событие").contains("Следующее");
 		assertThat(msg).doesNotContain("Расписание");                        // schedule column removed
-		assertThat(msg).contains("Позвонить" + " ".repeat(9) + "31.08 14:00"); // name padded, next aligned
+		assertThat(msg).contains("Позвонить" + " ".repeat(17) + "31.08 14:00"); // name padded to 24, next aligned
 		assertThat(msg).contains("пауза");                                   // paused shown instead of a date
 	}
 
