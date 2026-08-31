@@ -163,8 +163,7 @@ public class UpdateHandler {
 					: event.getNextFireAt().atZone(zone).format(SHORT_FORMAT);
 			String status = event.getStatus() == EventStatus.PAUSED ? " (на паузе)" : "";
 			sender.send(user.getTelegramChatId(),
-					"📌 %s%s\n%s, следующее срабатывание: %s".formatted(
-							event.getName(), status, ScheduleMath.describe(event), next),
+					"📌 %s%s\nСледующее срабатывание: %s".formatted(event.getName(), status, next),
 					Keyboards.listItem(event));
 		}
 	}
