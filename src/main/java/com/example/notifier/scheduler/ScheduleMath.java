@@ -61,6 +61,22 @@ public final class ScheduleMath {
 		return nextFireAfter(event, now, user);
 	}
 
+	/**
+	 * The next moment the bot will ping the user for this event: the earliest of its next scheduled
+	 * firing ({@code nextFireAt}) and a pending reminder on an open occurrence ({@code nextReminderAt}).
+	 * Either may be null (a fired one-shot has no next firing; an event with no open occurrence has no
+	 * reminder); null only when both are.
+	 */
+	public static Instant nextPing(Instant nextFireAt, Instant nextReminderAt) {
+		if (nextFireAt == null) {
+			return nextReminderAt;
+		}
+		if (nextReminderAt == null) {
+			return nextFireAt;
+		}
+		return nextFireAt.isBefore(nextReminderAt) ? nextFireAt : nextReminderAt;
+	}
+
 	public static String describe(Event event) {
 		return switch (event.getScheduleType()) {
 			case ONCE -> "однократно";

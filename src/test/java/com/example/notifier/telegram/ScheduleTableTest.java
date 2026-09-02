@@ -8,13 +8,17 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ScheduleTableTest {
 
-	private static Event event(String name, EventStatus status, ScheduleType type) {
+	private long nextId = 1;
+
+	private Event event(String name, EventStatus status, ScheduleType type) {
 		Event event = new Event();
+		event.setId(nextId++); // persisted events always have an id; the reminder map is keyed by it
 		event.setName(name);
 		event.setStatus(status);
 		event.setScheduleType(type);
@@ -29,7 +33,7 @@ class ScheduleTableTest {
 		paused.setIntervalMinutes(120);
 		paused.setNextFireAt(Instant.parse("2026-08-31T10:00:00Z"));
 
-		List<String> messages = ScheduleTable.render(List.of(active, paused), ZoneOffset.UTC);
+		List<String> messages = ScheduleTable.render(List.of(active, paused), ZoneOffset.UTC, Map.of());
 
 		assertThat(messages).hasSize(1);
 		String msg = messages.get(0);
@@ -45,10 +49,23 @@ class ScheduleTableTest {
 		Event longName = event("Очень длинное название события", EventStatus.ACTIVE, ScheduleType.ONCE);
 		Event html = event("A<b>C", EventStatus.ACTIVE, ScheduleType.ONCE);
 
-		String msg = ScheduleTable.render(List.of(longName, html), ZoneOffset.UTC).get(0);
+		String msg = ScheduleTable.render(List.of(longName, html), ZoneOffset.UTC, Map.of()).get(0);
 
 		assertThat(msg).contains("…");            // long name truncated
 		assertThat(msg).contains("A&lt;b&gt;C");  // angle brackets escaped for HTML parse mode
 		assertThat(msg).doesNotContain("<b>");    // raw tag never leaks
+	}
+
+	@Test
+	void showsReminderWhenEventHasNoNextFiring() {
+		Event fired = event("Помыть зеркала", EventStatus.ACTIVE, ScheduleType.ONCE);
+		fired.setId(42L);
+		fired.setNextFireAt(null); // one-shot already fired
+		Map<Long, Instant> reminders = Map.of(42L, Instant.parse("2026-08-31T14:30:00Z"));
+
+		String msg = ScheduleTable.render(List.of(fired), ZoneOffset.UTC, reminders).get(0);
+
+		assertThat(msg).contains("31.08 14:30"); // the pending reminder shown instead of "—"
+		assertThat(msg).doesNotContain("—");
 	}
 }

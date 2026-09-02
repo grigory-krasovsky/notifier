@@ -61,6 +61,22 @@ class ScheduleMathTest {
 		assertThat(ScheduleMath.nextFireAfter(event, Instant.parse("2026-08-25T12:00:00Z"), user)).isNull();
 	}
 
+	@Test
+	void nextPingPrefersTheSoonerOfFiringAndReminder() {
+		Instant fire = Instant.parse("2026-08-25T10:00:00Z");
+		Instant reminder = Instant.parse("2026-08-25T09:00:00Z");
+		assertThat(ScheduleMath.nextPing(fire, reminder)).isEqualTo(reminder);
+		assertThat(ScheduleMath.nextPing(reminder, fire)).isEqualTo(reminder);
+	}
+
+	@Test
+	void nextPingFallsBackWhenOneSideIsNull() {
+		Instant moment = Instant.parse("2026-08-25T10:00:00Z");
+		assertThat(ScheduleMath.nextPing(null, moment)).isEqualTo(moment); // fired one-shot still nagging
+		assertThat(ScheduleMath.nextPing(moment, null)).isEqualTo(moment);
+		assertThat(ScheduleMath.nextPing(null, null)).isNull();
+	}
+
 	private static AppUser userWithZone(String zone) {
 		AppUser user = new AppUser();
 		user.setTimezone(zone);

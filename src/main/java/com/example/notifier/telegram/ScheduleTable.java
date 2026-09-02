@@ -2,11 +2,14 @@ package com.example.notifier.telegram;
 
 import com.example.notifier.domain.Event;
 import com.example.notifier.domain.EventStatus;
+import com.example.notifier.scheduler.ScheduleMath;
 
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -23,9 +26,13 @@ public final class ScheduleTable {
 	private ScheduleTable() {
 	}
 
-	/** /schedule overview: one or more ready-to-send HTML messages; empty list for no events. */
-	public static List<String> render(List<Event> events, ZoneId zone) {
-		return paginate(events, "Следующее", event -> nextCell(event, zone));
+	/**
+	 * /schedule overview: one or more ready-to-send HTML messages; empty list for no events.
+	 * {@code nextReminderByEvent} maps an event id to the pending reminder of its open occurrence
+	 * (if any), so the "next" column shows the soonest ping — a firing or a reminder alike.
+	 */
+	public static List<String> render(List<Event> events, ZoneId zone, Map<Long, Instant> nextReminderByEvent) {
+		return paginate(events, "Следующее", event -> nextCell(event, zone, nextReminderByEvent));
 	}
 
 	/** /finished overview: same table shape, but the right column is the completion date. */
@@ -51,9 +58,12 @@ public final class ScheduleTable {
 		return sb.append("</pre>").toString();
 	}
 
-	private static String nextCell(Event event, ZoneId zone) {
-		return event.getStatus() == EventStatus.PAUSED ? "пауза"
-				: event.getNextFireAt() == null ? "—" : event.getNextFireAt().atZone(zone).format(NEXT);
+	private static String nextCell(Event event, ZoneId zone, Map<Long, Instant> nextReminderByEvent) {
+		if (event.getStatus() == EventStatus.PAUSED) {
+			return "пауза";
+		}
+		Instant next = ScheduleMath.nextPing(event.getNextFireAt(), nextReminderByEvent.get(event.getId()));
+		return next == null ? "—" : next.atZone(zone).format(NEXT);
 	}
 
 	private static String finishedCell(Event event, ZoneId zone) {

@@ -25,7 +25,9 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /** All bot logic lives here (separate bean so @Transactional works when the library calls consume()). */
 @Component
@@ -165,9 +167,10 @@ public class UpdateHandler {
 			return;
 		}
 		ZoneId zone = ZoneId.of(user.getTimezone());
+		Map<Long, Instant> reminders = openReminderByEvent(user);
 		for (Event event : list) {
-			String next = event.getNextFireAt() == null ? "—"
-					: event.getNextFireAt().atZone(zone).format(SHORT_FORMAT);
+			Instant nextPing = ScheduleMath.nextPing(event.getNextFireAt(), reminders.get(event.getId()));
+			String next = nextPing == null ? "—" : nextPing.atZone(zone).format(SHORT_FORMAT);
 			String status = event.getStatus() == EventStatus.PAUSED ? " (на паузе)" : "";
 			sender.send(user.getTelegramChatId(),
 					"📌 %s%s\n%s, следующее срабатывание: %s".formatted(
@@ -184,9 +187,22 @@ public class UpdateHandler {
 			return;
 		}
 		ZoneId zone = ZoneId.of(user.getTimezone());
-		for (String message : ScheduleTable.render(list, zone)) {
+		for (String message : ScheduleTable.render(list, zone, openReminderByEvent(user))) {
 			sender.sendHtml(user.getTelegramChatId(), message);
 		}
+	}
+
+	/**
+	 * eventId → pending reminder time of that event's open occurrence (value may be null when a firing
+	 * is open but has no reminder scheduled). Lets /schedule and /manage show the soonest ping even when
+	 * the event itself has no next firing (a fired one-shot still nagging).
+	 */
+	private Map<Long, Instant> openReminderByEvent(AppUser user) {
+		Map<Long, Instant> byEvent = new HashMap<>();
+		for (Occurrence open : occurrences.findByEvent_User_IdAndStatus(user.getId(), OccurrenceStatus.OPEN)) {
+			byEvent.put(open.getEvent().getId(), open.getNextReminderAt());
+		}
+		return byEvent;
 	}
 
 	/** /finished: read-only table of completed series, newest first. */
