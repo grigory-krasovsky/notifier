@@ -1,7 +1,6 @@
 package com.example.notifier.telegram;
 
 import com.example.notifier.domain.Event;
-import com.example.notifier.domain.EventStatus;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
@@ -65,13 +64,13 @@ public final class Keyboards {
 				.build();
 	}
 
+	/** Buttons under each /manage item: pause and its inverse (continue), plus delete. */
 	public static InlineKeyboardMarkup listItem(Event event) {
-		InlineKeyboardButton toggle = event.getStatus() == EventStatus.PAUSED
-				? btn("▶ Возобновить", "resume:" + event.getId())
-				: btn("⏸ Пауза", "pause:" + event.getId());
 		return InlineKeyboardMarkup.builder()
 				.keyboardRow(new InlineKeyboardRow(
-						toggle, btn("🏁 Завершить", "finish:" + event.getId()), btn("🗑 Удалить", "delete:" + event.getId())))
+						btn("⏸ Пауза", "pause:" + event.getId()),
+						btn("▶ Продолжить", "resume:" + event.getId()),
+						btn("🗑 Удалить", "delete:" + event.getId())))
 				.build();
 	}
 

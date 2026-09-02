@@ -150,7 +150,7 @@ public class UpdateHandler {
 				offsetLabel(offset), user.getWorkStart(), user.getWorkEnd()));
 	}
 
-	/** /manage: one message per event, each with pause/finish/delete buttons. */
+	/** /manage: one message per event, each with pause/continue/delete buttons. */
 	private void sendManage(AppUser user) {
 		List<Event> list = activeEvents(user);
 		if (list.isEmpty()) {
@@ -191,7 +191,7 @@ public class UpdateHandler {
 		sender.send(chatId, """
 				/new — создать событие
 				/schedule — расписание всех событий таблицей
-				/manage — управление событиями (пауза, завершение, удаление)
+				/manage — управление событиями (пауза, продолжение, удаление)
 				/clear — очистить переписку со мной
 				/start — перенастроить часовой пояс
 				На уведомлениях есть кнопки: ✅ Готово, ⏰ отложить, 🏁 завершить серию.""");
@@ -280,8 +280,8 @@ public class UpdateHandler {
 		}
 		event.setStatus(EventStatus.PAUSED);
 		closeOpenOccurrence(user, event, "⏸ " + event.getName() + " — на паузе");
-		sender.removeButtons(user.getTelegramChatId(), messageId); // the /list item that carried the pause button
-		sender.answerCallback(query.getId(), "⏸ На паузе. Возобновить: /list");
+		sender.removeButtons(user.getTelegramChatId(), messageId); // the /manage item that carried the pause button
+		sender.answerCallback(query.getId(), "⏸ На паузе. Продолжить: /manage");
 	}
 
 	private void onResume(AppUser user, long eventId, CallbackQuery query, Integer messageId) {
@@ -293,7 +293,7 @@ public class UpdateHandler {
 		event.setStatus(EventStatus.ACTIVE);
 		event.setNextFireAt(ScheduleMath.reactivate(event, Instant.now(), user));
 		sender.removeButtons(user.getTelegramChatId(), messageId);
-		sender.answerCallback(query.getId(), "▶ Возобновлено");
+		sender.answerCallback(query.getId(), "▶ Продолжено");
 	}
 
 	private void onDelete(AppUser user, long eventId, CallbackQuery query, Integer messageId) {
