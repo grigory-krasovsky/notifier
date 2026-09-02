@@ -53,6 +53,7 @@ public class UpdateHandler {
 
 	@Transactional
 	public void handle(Update update) {
+
 		if (update.hasCallbackQuery()) {
 			handleCallback(update.getCallbackQuery());
 		} else if (update.hasMessage() && update.getMessage().hasText()) {
