@@ -100,6 +100,9 @@ public class UpdateHandler {
 				if (EventWizard.isWizardState(user.getChatState())) {
 					wizard.cancel(user);
 					sender.send(chatId, "✖ Создание события отменено.");
+				} else if (EventWizard.isEditState(user.getChatState())) {
+					wizard.cancelEdit(user);
+					sender.send(chatId, "✖ Редактирование отменено.");
 				} else {
 					sender.send(chatId, "Сейчас нечего отменять.");
 				}
@@ -154,7 +157,7 @@ public class UpdateHandler {
 				offsetLabel(offset), user.getWorkStart(), user.getWorkEnd()));
 	}
 
-	/** /manage: one message per event, each with pause/continue/delete buttons. */
+	/** /manage: one message per event, each with pause/continue/edit/delete buttons. */
 	private void sendManage(AppUser user) {
 		List<Event> list = activeEvents(user);
 		if (list.isEmpty()) {
@@ -208,7 +211,7 @@ public class UpdateHandler {
 		sender.send(chatId, """
 				/new — создать событие
 				/schedule — расписание всех событий таблицей
-				/manage — управление событиями (пауза, продолжение, удаление)
+				/manage — управление событиями (пауза, продолжение, изменение, удаление)
 				/finished — завершённые события
 				/clear — очистить переписку со мной
 				/start — перенастроить часовой пояс
@@ -226,7 +229,7 @@ public class UpdateHandler {
 		}
 		String[] parts = query.getData().split(":");
 		switch (parts[0]) {
-			case "sched", "nag", "cal", "new" -> wizard.onCallback(user, query);
+			case "sched", "nag", "cal", "new", "edit", "esched", "enag" -> wizard.onCallback(user, query);
 			case "done" -> onDone(user, Long.parseLong(parts[1]), query, messageId);
 			case "snooze" -> onSnooze(user, Long.parseLong(parts[1]), parts[2], query, messageId);
 			case "finish" -> onFinish(user, Long.parseLong(parts[1]), query, messageId);

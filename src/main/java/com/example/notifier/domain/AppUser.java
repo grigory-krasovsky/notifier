@@ -44,6 +44,9 @@ public class AppUser {
 	@Enumerated(EnumType.STRING)
 	private ChatState chatState;
 
+	/** Event being edited via /manage, so text/calendar edit steps know their target; null otherwise. */
+	private Long editingEventId;
+
 	@Column(nullable = false, updatable = false)
 	private Instant createdAt = Instant.now();
 }

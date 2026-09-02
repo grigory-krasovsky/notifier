@@ -64,13 +64,51 @@ public final class Keyboards {
 				.build();
 	}
 
-	/** Buttons under each /manage item: pause and its inverse (continue), plus delete. */
+	/** Buttons under each /manage item: pause and its inverse (continue), edit, delete. */
 	public static InlineKeyboardMarkup listItem(Event event) {
+		long id = event.getId();
 		return InlineKeyboardMarkup.builder()
 				.keyboardRow(new InlineKeyboardRow(
-						btn("⏸ Пауза", "pause:" + event.getId()),
-						btn("▶ Продолжить", "resume:" + event.getId()),
-						btn("🗑 Удалить", "delete:" + event.getId())))
+						btn("⏸ Пауза", "pause:" + id), btn("▶ Продолжить", "resume:" + id)))
+				.keyboardRow(new InlineKeyboardRow(
+						btn("✏️ Изменить", "edit:" + id), btn("🗑 Удалить", "delete:" + id)))
+				.build();
+	}
+
+	/** Field picker shown when the user taps "✏️ Изменить" on a /manage item. */
+	public static InlineKeyboardMarkup editMenu(long eventId) {
+		return InlineKeyboardMarkup.builder()
+				.keyboardRow(new InlineKeyboardRow(
+						btn("✏️ Название", "edit:" + eventId + ":name"),
+						btn("🔔 Напоминания", "edit:" + eventId + ":nag")))
+				.keyboardRow(new InlineKeyboardRow(
+						btn("🔁 Периодичность", "edit:" + eventId + ":sched"),
+						btn("🕒 Время", "edit:" + eventId + ":time")))
+				.keyboardRow(new InlineKeyboardRow(btn("✖ Отмена", "edit:" + eventId + ":cancel")))
+				.build();
+	}
+
+	/** Schedule presets for editing (mirror of {@link #schedulePresets()} but carrying the event id). */
+	public static InlineKeyboardMarkup editSchedulePresets(long eventId) {
+		return InlineKeyboardMarkup.builder()
+				.keyboardRow(new InlineKeyboardRow(
+						btn("Однократно", "esched:" + eventId + ":ONCE"),
+						btn("Каждый день", "esched:" + eventId + ":DAILY")))
+				.keyboardRow(new InlineKeyboardRow(
+						btn("Каждые N минут", "esched:" + eventId + ":EVERY_MIN"),
+						btn("Каждые N часов", "esched:" + eventId + ":EVERY_HOUR")))
+				.keyboardRow(new InlineKeyboardRow(btn("✖ Отмена", "edit:" + eventId + ":cancel")))
+				.build();
+	}
+
+	/** Reminder presets for editing (mirror of {@link #nagPresets()} but carrying the event id). */
+	public static InlineKeyboardMarkup editNagPresets(long eventId) {
+		return InlineKeyboardMarkup.builder()
+				.keyboardRow(new InlineKeyboardRow(btn("Без напоминаний", "enag:" + eventId + ":0")))
+				.keyboardRow(new InlineKeyboardRow(
+						btn("10 мин", "enag:" + eventId + ":10"), btn("30 мин", "enag:" + eventId + ":30"),
+						btn("1 час", "enag:" + eventId + ":60"), btn("3 часа", "enag:" + eventId + ":180")))
+				.keyboardRow(new InlineKeyboardRow(btn("✖ Отмена", "edit:" + eventId + ":cancel")))
 				.build();
 	}
 

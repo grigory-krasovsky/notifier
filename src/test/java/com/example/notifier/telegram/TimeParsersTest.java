@@ -3,6 +3,7 @@ package com.example.notifier.telegram;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.time.LocalTime;
 import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,5 +42,19 @@ class TimeParsersTest {
 		assertThat(TimeParsers.parseFirstFire("завтра", ZONE, NOW)).isEmpty();
 		assertThat(TimeParsers.parseFirstFire("25:70", ZONE, NOW)).isEmpty();
 		assertThat(TimeParsers.parseFirstFire("32.13 10:00", ZONE, NOW)).isEmpty();
+	}
+
+	@Test
+	void parsesTimeOfDay() {
+		assertThat(TimeParsers.parseTimeOfDay("9:05")).contains(LocalTime.of(9, 5));
+		assertThat(TimeParsers.parseTimeOfDay(" 23:59 ")).contains(LocalTime.of(23, 59));
+	}
+
+	@Test
+	void rejectsBadTimeOfDay() {
+		assertThat(TimeParsers.parseTimeOfDay("24:00")).isEmpty();
+		assertThat(TimeParsers.parseTimeOfDay("9:60")).isEmpty();
+		assertThat(TimeParsers.parseTimeOfDay("25.12 10:00")).isEmpty();
+		assertThat(TimeParsers.parseTimeOfDay("вечером")).isEmpty();
 	}
 }

@@ -57,6 +57,12 @@ public final class TimeParsers {
 		return Optional.empty();
 	}
 
+	/** Bare "ЧЧ:ММ" → time of day (used when editing a DAILY event's firing time); empty if malformed. */
+	public static Optional<LocalTime> parseTimeOfDay(String text) {
+		Matcher m = TIME.matcher(text.trim());
+		return m.matches() ? Optional.ofNullable(toTime(m.group(1), m.group(2))) : Optional.empty();
+	}
+
 	private static LocalTime toTime(String hour, String minute) {
 		int h = Integer.parseInt(hour);
 		int m = Integer.parseInt(minute);
