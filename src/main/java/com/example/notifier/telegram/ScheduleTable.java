@@ -7,6 +7,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Renders the /schedule overview as a monospace HTML table (Telegram has no real tables,
@@ -22,25 +23,41 @@ public final class ScheduleTable {
 	private ScheduleTable() {
 	}
 
-	/** One or more ready-to-send HTML messages; empty list for no events. */
+	/** /schedule overview: one or more ready-to-send HTML messages; empty list for no events. */
 	public static List<String> render(List<Event> events, ZoneId zone) {
+		return paginate(events, "Следующее", event -> nextCell(event, zone));
+	}
+
+	/** /finished overview: same table shape, but the right column is the completion date. */
+	public static List<String> renderFinished(List<Event> events, ZoneId zone) {
+		return paginate(events, "Завершено", event -> finishedCell(event, zone));
+	}
+
+	private static List<String> paginate(List<Event> events, String rightHeader, Function<Event, String> rightCell) {
 		List<String> messages = new ArrayList<>();
 		for (int start = 0; start < events.size(); start += MAX_ROWS) {
 			List<Event> page = events.subList(start, Math.min(start + MAX_ROWS, events.size()));
-			messages.add(renderPage(page, zone));
+			messages.add(renderPage(page, rightHeader, rightCell));
 		}
 		return messages;
 	}
 
-	private static String renderPage(List<Event> events, ZoneId zone) {
+	private static String renderPage(List<Event> events, String rightHeader, Function<Event, String> rightCell) {
 		StringBuilder sb = new StringBuilder("<pre>");
-		sb.append(row("Событие", "Следующее"));
+		sb.append(row("Событие", rightHeader));
 		for (Event event : events) {
-			String next = event.getStatus() == EventStatus.PAUSED ? "пауза"
-					: event.getNextFireAt() == null ? "—" : event.getNextFireAt().atZone(zone).format(NEXT);
-			sb.append(row(event.getName(), next));
+			sb.append(row(event.getName(), rightCell.apply(event)));
 		}
 		return sb.append("</pre>").toString();
+	}
+
+	private static String nextCell(Event event, ZoneId zone) {
+		return event.getStatus() == EventStatus.PAUSED ? "пауза"
+				: event.getNextFireAt() == null ? "—" : event.getNextFireAt().atZone(zone).format(NEXT);
+	}
+
+	private static String finishedCell(Event event, ZoneId zone) {
+		return event.getFinishedAt() == null ? "—" : event.getFinishedAt().atZone(zone).format(NEXT);
 	}
 
 	private static String row(String name, String next) {

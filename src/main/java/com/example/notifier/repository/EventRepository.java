@@ -17,4 +17,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 	Optional<Event> findFirstByUserIdAndStatus(Long userId, EventStatus status);
 
 	List<Event> findByUserIdAndStatusInOrderByCreatedAt(Long userId, Collection<EventStatus> statuses);
+
+	/** /finished list: completed series, newest completion first. */
+	List<Event> findByUserIdAndStatusOrderByFinishedAtDesc(Long userId, EventStatus status);
 }

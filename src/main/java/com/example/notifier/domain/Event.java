@@ -62,6 +62,9 @@ public class Event {
 	/** Precomputed next firing moment — the scheduler's polling key; null when FINISHED. */
 	private Instant nextFireAt;
 
+	/** When the series moved to FINISHED; null while DRAFT/ACTIVE/PAUSED. */
+	private Instant finishedAt;
+
 	@Column(nullable = false, updatable = false)
 	private Instant createdAt = Instant.now();
 }

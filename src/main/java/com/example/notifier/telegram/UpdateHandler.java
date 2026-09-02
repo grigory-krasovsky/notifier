@@ -88,6 +88,10 @@ public class UpdateHandler {
 				sendSchedule(user);
 				return;
 			}
+			case "/finished" -> {
+				sendFinished(user);
+				return;
+			}
 			case "/clear" -> {
 				onClearRequest(chatId);
 				return;
@@ -182,6 +186,19 @@ public class UpdateHandler {
 		}
 	}
 
+	/** /finished: read-only table of completed series, newest first. */
+	private void sendFinished(AppUser user) {
+		List<Event> list = events.findByUserIdAndStatusOrderByFinishedAtDesc(user.getId(), EventStatus.FINISHED);
+		if (list.isEmpty()) {
+			sender.send(user.getTelegramChatId(), "Завершённых событий пока нет.");
+			return;
+		}
+		ZoneId zone = ZoneId.of(user.getTimezone());
+		for (String message : ScheduleTable.renderFinished(list, zone)) {
+			sender.sendHtml(user.getTelegramChatId(), message);
+		}
+	}
+
 	private List<Event> activeEvents(AppUser user) {
 		return events.findByUserIdAndStatusInOrderByCreatedAt(user.getId(),
 				List.of(EventStatus.ACTIVE, EventStatus.PAUSED));
@@ -192,6 +209,7 @@ public class UpdateHandler {
 				/new — создать событие
 				/schedule — расписание всех событий таблицей
 				/manage — управление событиями (пауза, продолжение, удаление)
+				/finished — завершённые события
 				/clear — очистить переписку со мной
 				/start — перенастроить часовой пояс
 				На уведомлениях есть кнопки: ✅ Готово, ⏰ отложить, 🏁 завершить серию.""");
@@ -235,6 +253,7 @@ public class UpdateHandler {
 		if (event.getScheduleType() == ScheduleType.ONCE) {
 			event.setStatus(EventStatus.FINISHED);
 			event.setNextFireAt(null);
+			event.setFinishedAt(now);
 		}
 		String time = now.atZone(ZoneId.of(user.getTimezone())).format(TIME_FORMAT);
 		sender.editMessage(user.getTelegramChatId(), messageId, "✅ " + event.getName() + " — " + time, null);
@@ -266,6 +285,7 @@ public class UpdateHandler {
 		}
 		event.setStatus(EventStatus.FINISHED);
 		event.setNextFireAt(null);
+		event.setFinishedAt(Instant.now());
 		// The finish button sits on the open occurrence's own message, which closeOpenOccurrence turns
 		// into a trace — so no separate removeButtons(messageId) is needed here.
 		closeOpenOccurrence(user, event, "🏁 " + event.getName() + " — серия завершена");

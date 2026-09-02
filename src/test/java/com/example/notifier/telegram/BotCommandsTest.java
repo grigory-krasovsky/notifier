@@ -10,7 +10,7 @@ class BotCommandsTest {
 	@Test
 	void exposesCoreCommandsWithDescriptions() {
 		assertThat(BotCommands.all()).extracting(BotCommand::getCommand)
-				.containsExactly("new", "schedule", "manage", "clear", "help", "start");
+				.containsExactly("new", "schedule", "manage", "finished", "clear", "help", "start");
 		// Bot API: names lowercase, descriptions 1-256 chars
 		assertThat(BotCommands.all()).allSatisfy(c -> {
 			assertThat(c.getCommand()).matches("[a-z0-9_]{1,32}");
